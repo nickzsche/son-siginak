@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SON SIĞINAK - Kıyamet Sonrası Voxel Hayatta Kalma RPG</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="game-container"></div>
+  
+  <!-- Low health & radiation screen vignette -->
+  <div id="vignette-overlay"></div>
+  <div id="weather-overlay"></div>
+
+  <!-- Top HUD Bar: FPS, Clock, Day, Weather, Graphics Quality, Shelter Status -->
+  <div id="top-hud">
+    <div class="hud-badge" id="fps-badge">60 FPS</div>
+    <div class="hud-badge" id="clock-badge">GÜN 1 | 08:00 (Gündüz)</div>
+    <div class="hud-badge" id="weather-badge">Hava: Açık / Tozlu</div>
+    <div class="hud-badge" id="zone-badge">Bölge: Sığınak İçi (Güvenli / Sıcak)</div>
+    <div class="hud-badge" id="power-badge">⚡ Jeneratör: %85 (Aktif - 12W)</div>
+    <div class="hud-controls">
+      <label for="quality-select">Grafik:</label>
+      <select id="quality-select">
+        <option value="low">Düşük</option>
+        <option value="medium">Orta</option>
+        <option value="high" selected>Yüksek</option>
+      </select>
+      <button id="btn-save" title="Manuel Kaydet">💾 Kaydet</button>
+      <button id="btn-help" title="Kontroller ve Rehber">❓</button>
+    </div>
+  </div>
+
+  <!-- Left HUD: Vitals, Body Wounds, Active Perks -->
+  <div id="left-hud">
+    <div class="panel-title">HAYATİ DEĞERLER</div>
+    <div class="vital-row">
+      <span>❤️ Sağlık</span>
+      <div class="bar-bg"><div id="bar-health" class="bar-fill health" style="width: 100%"></div></div>
+      <span id="val-health">100</span>
+    </div>
+    <div class="vital-row">
+      <span>🍖 Açlık</span>
+      <div class="bar-bg"><div id="bar-hunger" class="bar-fill hunger" style="width: 100%"></div></div>
+      <span id="val-hunger">100</span>
+    </div>
+    <div class="vital-row">
+      <span>💧 Susuzluk</span>
+      <div class="bar-bg"><div id="bar-thirst" class="bar-fill thirst" style="width: 100%"></div></div>
+      <span id="val-thirst">100</span>
+    </div>
+    <div class="vital-row">
+      <span>⚡ Enerji</span>
+      <div class="bar-bg"><div id="bar-stamina" class="bar-fill stamina" style="width: 100%"></div></div>
+      <span id="val-stamina">100</span>
+    </div>
+    <div class="vital-row">
+      <span>☢️ Radyasyon</span>
+      <div class="bar-bg"><div id="bar-rad" class="bar-fill rad" style="width: 5%"></div></div>
+      <span id="val-rad">5</span>
+    </div>
+
+    <div class="panel-title" style="margin-top:8px;">VÜCUT DURUMU & YARALAR</div>
+    <div id="body-status-grid">
+      <div class="limb-box" id="limb-head">Kafa: Sağlam</div>
+      <div class="limb-box" id="limb-torso">Gövde: Sağlam</div>
+      <div class="limb-box" id="limb-arms">Kollar: Sağlam</div>
+      <div class="limb-box" id="limb-legs">Bacaklar: Sağlam</div>
+    </div>
+    <div id="afflictions-list"></div>
+  </div>
+
+  <!-- Right Top HUD: Objectives & Radar / POI Compass -->
+  <div id="right-hud">
+    <div class="panel-title">GÖREV & HİKÂYE İLERLEMESİ</div>
+    <div id="quest-box">
+      <div class="quest-item active" id="quest-main">🎯 Derin Tesis Sinyali: Y=-6.5m (Kazarak Ulaş)</div>
+      <div class="quest-item" id="quest-wave">🌙 7. Gece Büyük Dalga Hazırlığı (Gün 1/7)</div>
+      <div class="quest-item" id="quest-lore">📼 Bulunan Kayıtlar: <span id="lore-count">1 / 8</span></div>
+    </div>
+    <div class="panel-title" style="margin-top:8px;">YÜZEY RADARI & DERİNLİK</div>
+    <div id="coords-display">Konum: X:0.0 Y:-1.8 Z:0.0</div>
+    <div id="poi-compass">Yüzey POI: Kasaba (Kuzey 14m) | Hastane (Doğu 22m)</div>
+  </div>
+
+  <!-- Crosshair & Context Prompt -->
+  <div id="crosshair">
+    <div class="ch-dot"></div>
+    <div class="ch-ring"></div>
+  </div>
+  <div id="target-info"></div>
+  <div id="interaction-prompt">[E] Etkileşim</div>
+  <div id="mining-progress-wrap">
+    <div id="mining-progress-bar"></div>
+  </div>
+
+  <!-- Event / Alert Banner -->
+  <div id="alert-banner"></div>
+
+  <!-- Build Mode Overlay (B) -->
+  <div id="build-hud" class="hidden">
+    <div class="build-title">🔨 İNŞA, ODA VE ELEKTRİK MODU [B ile Kapat | Q/R Kategori | 1-9 Seç | Sol Tık Yerleştir | Sağ Tık Sil]</div>
+    <div id="build-options"></div>
+  </div>
+
+  <!-- Bottom Quickbar -->
+  <div id="bottom-hud">
+    <div id="quickbar"></div>
+    <div class="controls-hint">
+      [WASD] Hareket | [Sol Tık] Kaz/Saldır/Ateş | [Sağ Tık] Nişan/Blok | [B] İnşa & Oda | [Tab] Envanter/Üretim/Yetenek | [F] Fener | [E] Etkileşim | [Z] Uyu
+    </div>
+  </div>
+
+  <!-- Tab Modal: Inventory, Crafting, Skills & Perks, Medical, Lore Notes -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-window">
+      <div id="modal-tabs">
+        <button class="tab-btn active" data-tab="tab-inv">🎒 Envanter & Ekipman</button>
+        <button class="tab-btn" data-tab="tab-craft">🛠️ Atölye & Üretim</button>
+        <button class="tab-btn" data-tab="tab-skills">⭐ Yetenekler & Perk'ler</button>
+        <button class="tab-btn" data-tab="tab-med">🏥 Revir & Yara Tedavisi</button>
+        <button class="tab-btn" data-tab="tab-lore">📼 Hikâye Kayıtları & Terminaller</button>
+        <button id="modal-close">✖ [Tab / Esc]</button>
+      </div>
+      <div id="modal-body">
+        <div id="tab-inv" class="tab-pane active"></div>
+        <div id="tab-craft" class="tab-pane"></div>
+        <div id="tab-skills" class="tab-pane"></div>
+        <div id="tab-med" class="tab-pane"></div>
+        <div id="tab-lore" class="tab-pane"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Virtual Touch Controls (Abstract Input Layer Ready) -->
+  <div id="mobile-controls" class="hidden">
+    <div id="virtual-joystick-zone">
+      <div id="virtual-joystick-knob"></div>
+    </div>
+    <div id="mobile-action-buttons">
+      <button id="mb-attack">⛏️/🔫</button>
+      <button id="mb-interact">✋ E</button>
+      <button id="mb-jump">⬆️ Zıpla</button>
+      <button id="mb-build">🔨 İnşa</button>
+      <button id="mb-flashlight">🔦 Fener</button>
+      <button id="mb-menu">🎒 Menü</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
